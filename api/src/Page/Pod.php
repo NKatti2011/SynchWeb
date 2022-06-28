@@ -47,6 +47,26 @@ class Pod extends Page
             'app' => $app,
         );
 
+        // Need to lookup which python module and number of CPU cores used to run the notebook
+        if($app == 'JNB'){
+            $rows = $this->db->pq("SELECT pjp.parameterKey, pjp.parameterValue FROM ProcessingJobParameter pjp
+                        INNER JOIN ProcessingJob pj ON pjp.processingJobId = pj.processingJobId
+                        INNER JOIN AutoProcProgram app ON pj.processingJobId = app.processingJobId
+                        INNER JOIN AutoProcProgramAttachment appa ON app.autoProcProgramId = appa.autoProcProgramId
+                        WHERE appa.autoProcProgramAttachmentId = :1 AND pjp.parameterKey = :2
+                        OR appa.autoProcProgramAttachmentId = :3 AND pjp.parameterKey = :4",
+                        array($this->arg('id'), 'jupyter_module', $this->arg('id'), 'jupyter_numberOfCores'));
+
+
+            foreach($rows as &$item){
+                if($item['PARAMETERKEY'] == "jupyter_module") {
+                    $data += array('module' => explode("/", $item['PARAMETERVALUE'])[1]);
+                } else if ($item['PARAMETERKEY'] == "jupyter_numberOfCores") {
+                    $data += array('cpu' => $item['PARAMETERVALUE']);
+                }
+            }
+        }
+
         global $h5web_service_url, $h5web_service_cert;
 
         $ch = curl_init();
