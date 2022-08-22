@@ -2,13 +2,13 @@
 
 namespace SynchWeb;
 
-use Slim\Slim;
+use Slim\App;
 
 class Dispatch
 {
     protected $app, $db, $user;
 
-    function __construct(Slim $app, $db, $user)
+    function __construct(App $app, $db, $user)
     {
         $this->app = $app;
         $this->db = $db;
@@ -31,6 +31,8 @@ class Dispatch
             // Determine routes for each class, where base URL is /
             $app->group('/' . strtolower($class_name), function () use ($app, $db, $user, $class_name) {
                 $full_class_name = 'SynchWeb\\Page\\' . $class_name;
+                // print_r($full_class_name);
+                // print_r('-------------');
 
                 // Instantiate each class if class has been defined
                 // This merges the routes from all classes
@@ -40,9 +42,9 @@ class Dispatch
             });
         }
 
-        $this->app->notFound(function () use ($app) {
-            $app->halt(404, json_encode(array('status' => 404, 'message' => 'not found')));
-        });
+        // $this->app->notFound(function () use ($app) {
+        //     $app->halt(404, json_encode(array('status' => 404, 'message' => 'not found')));
+        // });
 
         $app->run();
     }

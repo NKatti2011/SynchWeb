@@ -33,7 +33,6 @@ class Vstat extends Page
                               array('/overview', 'get', '_overview'),
                               array('/runs', 'get', '_runs'),
                               array('/histogram', 'get', '_parameter_histogram'),
-
                               array('/dewars', 'get', '_dewars_breakdown'),
 
         );

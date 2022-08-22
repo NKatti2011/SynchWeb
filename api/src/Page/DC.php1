@@ -9,48 +9,61 @@ class DC extends Page
 {
         
 
-        public static $arg_list = array('id' => '\d+', 'ids' => '\d+', 'visit' => '\w+\d+-\d+', 's' => '[\w\d\-\/]+', 't' => '\w+', 'value' => '.*', 'sid' => '\d+', 'aid' => '\d+', 'pjid' => '\d+', 'imp' => '\d', 'pid' => '\d+', 'h' => '\d\d', 'dmy' => '\d\d\d\d\d\d\d\d',
-                              'ssid' => '\d+',
-                              'dcg' => '\d+',
-                              'a' => '\d+(.\d+)?',
-                              'b' => '\d+(.\d+)?',
-                              'c' => '\d+(.\d+)?',
-                              'al' => '\d+(.\d+)?',
-                              'be' => '\d+(.\d+)?',
-                              'ga' => '\d+(.\d+)?',
-                              'sg' => '\w+',
-                              'single' => '\d',
-                              'COMMENTS' => '.*',
+        public static $arg_list = array(
+            // 'id' => '\d+', 
+            'ids' => '\d+', 
+            'visit' => '\w+\d+-\d+', 
+            's' => '[\w\d\-\/]+', 
+            't' => '\w+', 
+            'value' => '.*', 
+            'sid' => '\d+', 
+            // 'aid' => '\d+', 
+            'pjid' => '\d+', 
+            'imp' => '\d', 
+            'pid' => '\d+', 
+            'h' => '\d\d', 
+            'dmy' => '\d\d\d\d\d\d\d\d',
+            'ssid' => '\d+',
+            'dcg' => '\d+',
+            // 'a' => '\d+(.\d+)?',
+            // 'b' => '\d+(.\d+)?',
+            // 'c' => '\d+(.\d+)?',
+            // 'al' => '\d+(.\d+)?',
+            // 'be' => '\d+(.\d+)?',
+            // 'ga' => '\d+(.\d+)?',
+            'sg' => '\w+',
+            'single' => '\d',
+            'COMMENTS' => '.*',
 
-                              'dcid' => '\d+',
-                              'DATACOLLECTIONID' => '\d+',
-                              'PERSONID' => '\d+',
-                              'AUTOPROCPROGRAMMESSAGEID' => '\d+',
-                              'PROCESSINGJOBID' => '\d+',
+            'dcid' => '\d+',
+            'DATACOLLECTIONID' => '\d+',
+            'PERSONID' => '\d+',
+            'AUTOPROCPROGRAMMESSAGEID' => '\d+',
+            'PROCESSINGJOBID' => '\d+',
 
-                              'debug' => '\d',
+            'debug' => '\d',
 
-                              );
+        );
         
 
-        public static $dispatch = array(array('(/sing:le)(/:id)', 'get', '_data_collections', array('le' => '\w+', 'id' => '\d+')),
+        public static $dispatch = array(array('(/sing{le:\w+})(/{id:\d+})', 'get', '_data_collections'),
                               array('/chi', 'post', '_chk_image'),
-                              array('/imq/:id', 'get', '_image_qi'),
-                              array('/grid/:id', 'get', '_grid_info'),
-                              array('/grid/xrc/:id', 'get', '_grid_xrc'),
+                              array('/imq/{id:\d+}', 'get', '_image_qi'),
+                              array('/grid/{id:\d+}', 'get', '_grid_info'),
+                              array('/grid/xrc/{id:\d+}', 'get', '_grid_xrc'),
                               array('/grid/map', 'get', '_grid_map'),
-                              array('/ed/:id', 'get', '_edge', array('id' => '\d+'), 'edge'),
-                              array('/mca/:id', 'get', '_mca', array('id' => '\d+'), 'mca'),
-                              array('/strat/:id', 'get', '_dc_strategies'),
-                              array('/rd/aid/:aid/:id', 'get', '_rd'),
-                              array('/single/t/:t/:id', 'patch', '_set_comment'),
+                              array('/ed/{id:\d+}', 'get', '_edge', 'edge'),
+                              array('/mca/{id:\d+}', 'get', '_mca', 'mca'),
+                              array('/strat/{id:\d+}', 'get', '_dc_strategies'),
+                              array('/rd/aid/{aid_val:\d+}/{id:\d+}', 'get', '_rd'),
+                              array('/single/t/{t_val:\w+}/{id:\d+}', 'patch', '_set_comment'),
                               array('/sym', 'get', '_get_symmetry'),
-                              array('/xfm(/:id)', 'get', '_fluo_map'),
+                              array('/xfm[/{id:\d+}]', 'get', '_fluo_map'),
 
-                              array('/comments(/:dcid)', 'get', '_get_comments'),
+                              array('/comments[/{dcid:\d+}]', 'get', '_get_comments'),
                               array('/comments', 'post', '_add_comment'),
 
-                              array('/dat/:id', 'get', '_plot'),
+                              array('/dat/{id:\d+}', 'get', '_plot'),
                             );
 
 
@@ -1049,7 +1062,7 @@ class DC extends Page
         # ------------------------------------------------------------------------
         # Update comment for a data collection
         function _set_comment() {
-            if (!$this->has_arg('t')) $this->_error('No data type specified');
+            if (!$this->has_arg('t_val')) $this->_error('No data type specified');
             if (!$this->arg('id')) $this->_error('No data collection id specified');
             
             $types = array('data' => array('datacollection', 'datacollectionid'),
@@ -1059,8 +1072,8 @@ class DC extends Page
 
             $types['grid'] = $types['data'];
             
-            if (!array_key_exists($this->arg('t'), $types)) $this->_error('No such data type');
-            $t = $types[$this->arg('t')];
+            if (!array_key_exists($this->arg('t_val'), $types)) $this->_error('No such data type');
+            $t = $types[$this->arg('t_val')];
             
             $com = $this->db->pq('SELECT comments from '.$t[0].' WHERE '.$t[1].'=:1', array($this->arg('id')));
             
@@ -1075,7 +1088,7 @@ class DC extends Page
         
         
         # Plot R_d for fast_dp
-        function _rd($aid, $id) {
+        function _rd($aid_val, $id) {
             $info = $this->db->pq("SELECT appa.filename,appa.filepath,appa.filetype 
                 FROM autoprocintegration api 
                 INNER JOIN autoprocscaling_has_int aph ON api.autoprocintegrationid = aph.autoprocintegrationid 
@@ -1083,7 +1096,7 @@ class DC extends Page
                 INNER JOIN autoproc ap ON aps.autoprocid = ap.autoprocid 
                 INNER JOIN autoprocprogram app ON api.autoprocprogramid = app.autoprocprogramid 
                 INNER JOIN autoprocprogramattachment appa ON appa.autoprocprogramid = app.autoprocprogramid 
-                WHERE api.datacollectionid = :1 AND api.autoprocprogramid=:2 AND appa.filetype LIKE 'Log'", array($id, $aid));
+                WHERE api.datacollectionid = :1 AND api.autoprocprogramid=:2 AND appa.filetype LIKE 'Log'", array($id, $aid_val));
             
             if (!sizeof($info)) $this->_error('The specified auto processing doesnt exist');
             else $info = $info[0];

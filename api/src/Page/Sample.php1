@@ -104,7 +104,6 @@ class Sample extends Page
                               'EXPERIMENTKIND' => '[\w|\s]+',
                               'CENTRINGMETHOD' => '\w+',
                               'RADIATIONSENSITIVITY' => '\w+',
-                              'ENERGY' => '\w+',
                               'USERPATH' => '(?=.{0,40}$)(\w|-)+\/?(\w|-)+', // Up to two folders as a path, 40 characters maximum
                               'EXPOSURETIME' => '\d+(.\d+)?',
                               'PREFERREDBEAMSIZEX' => '\d+(.\d+)?',

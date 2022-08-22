@@ -26,14 +26,13 @@ class DatabaseParent
 
     public function set_debug($debug)
     {
-        if ($this->app) $this->app->contentType('text/html');
+        // if ($this->app) $this->app->contentType('text/html');
         $this->debug = $debug;
     }
 
     public function error($title, $msg)
     {
         header('HTTP/1.1 503 Service Unavailable');
-        // header('Content-type:application/json');
         print json_encode(array('title' => $title, 'msg' => $msg));
         error_log('Database Error: ' . $msg);
         exit();

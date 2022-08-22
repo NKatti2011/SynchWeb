@@ -14,21 +14,21 @@ class Download extends Page
 {
 
         public static $arg_list = array('id' => '\d+',
-                              'aid' => '\d+',
+                            //   'aid' => '\d+',
                               'run' => '\d+',
                               'visit' => '\w+\d+-\d+',
                               'u' => '\w+\d+',
                               's' => '\d',
                               'log' => '\d',
                               'archive' => '\d',
-                              'LogFiles' => '([\w|\.])+',
+                            //   'LogFiles' => '([\w|\.])+',
                               'ty' => '\w+',
                               'pdb' => '\d',
                               'map' => '\d',
                               'validity' => '.*',
 
                               'ppl' => '\w+',
-                              'aid' => '\w+',
+                            //   'aid' => '\w+',
             
                               'filetype' => '\w+',
                               'blsampleid' => '\d+',
@@ -42,15 +42,15 @@ class Download extends Page
 
         public static $dispatch = array(
                               array('/plots', 'get', '_auto_processing_plots'),
-                              array('/csv/visit/:visit', 'get', '_csv_report'),
+                              array('/csv/visit/{visit_val:\w+\d+-\d+}', 'get', '_csv_report'),
                               array('/sign', 'post', '_sign_url'),
-                              array('/data/visit/:visit', 'get', '_download_visit'),
+                              array('/data/visit/{visit_val:\w+\d+-\d+}', 'get', '_download_visit'),
                               array('/attachments', 'get', '_get_attachments'),
-                              array('/attachment/id/:id/aid/:aid', 'get', '_get_attachment'),
-                              array('/dc/id/:id', 'get', '_download'),
+                              array('/attachment/id/{id:\d+}/aid/{aid:\w+}', 'get', '_get_attachment'),
+                              array('/dc/id/{id:\d+}', 'get', '_download'),
 
-                              array('/ap/attachments(/:AUTOPROCPROGRAMATTACHMENTID)(/dl/:download)', 'get', '_get_autoproc_attachments'),
-                              array('/ap/archive/:AUTOPROCPROGRAMID', 'get', '_get_autoproc_archive'),
+                              array('/ap/attachments[/{AUTOPROCPROGRAMATTACHMENTID:\d+}][/dl/{download:\d}]', 'get', '_get_autoproc_attachments'),
+                              array('/ap/archive/{AUTOPROCPROGRAMID:\d+}', 'get', '_get_autoproc_archive'),
             );
 
 
@@ -70,7 +70,7 @@ class Download extends Page
         function _download_visit() {
             $filesystem = new Filesystem();
             $tp = new TemplateParser($this->db);
-            $visit = $tp->visit_dir(array('VISIT' => $this->arg('visit')));
+            $visit = $tp->visit_dir(array('VISIT' => $this->arg('visit_val')));
 
             $data = $visit.'/.ispyb/download/download.zip';
 
@@ -79,7 +79,7 @@ class Download extends Page
                 $response->headers->set("Content-Type", "application/octet-stream");
                 $response->setContentDisposition(
                     ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-                    $this->arg('visit').'_download.zip'
+                    $this->arg('visit_val').'_download.zip'
                 );
                 $response->send();
             } else $this->_error('There doesnt seem to be a data archive available for this visit');
@@ -268,9 +268,9 @@ class Download extends Page
         # ------------------------------------------------------------------------
         # CSV Report of Data Collections
         function _csv_report() {
-            if (!$this->has_arg('visit')) $this->_error('No visit specified', 'You must specify a visit to download a report for');
+            if (!$this->has_arg('visit_val')) $this->_error('No visit specified', 'You must specify a visit to download a report for');
 
-            $vis = $this->db->pq("SELECT s.sessionid,s.beamlinename,TO_CHAR(s.startdate, 'DD_MM_YYYY') as st FROM blsession s INNER JOIN proposal p ON p.proposalid = s.proposalid WHERE CONCAT(CONCAT(CONCAT(p.proposalcode, p.proposalnumber), '-'), s.visit_number) LIKE :1", array($this->arg('visit')));
+            $vis = $this->db->pq("SELECT s.sessionid,s.beamlinename,TO_CHAR(s.startdate, 'DD_MM_YYYY') as st FROM blsession s INNER JOIN proposal p ON p.proposalid = s.proposalid WHERE CONCAT(CONCAT(CONCAT(p.proposalcode, p.proposalnumber), '-'), s.visit_number) LIKE :1", array($this->arg('visit_val')));
 
             if (!sizeof($vis)) $this->_error('No such visit', 'The specified visit doesnt exist');
             else $vis = $vis[0];
@@ -285,7 +285,7 @@ class Download extends Page
                 WHERE dcg.sessionid=:1 ORDER BY dc.starttime", array($vis['SESSIONID']));
 
             $this->app->response->headers->set("Content-type", "application/vnd.ms-excel");
-            $this->app->response->headers->set("Content-disposition", "attachment; filename=".$vis['ST']."_".$vis['BEAMLINENAME']."_".$this->arg('visit').".csv");
+            $this->app->response->headers->set("Content-disposition", "attachment; filename=".$vis['ST']."_".$vis['BEAMLINENAME']."_".$this->arg('visit_val').".csv");
             print "Image prefix,Beamline,Run no,Start Time,Sample Name,Protein Acronym,# images, Wavelength (angstrom), Distance (mm), Exp. Time (sec), Phi start (deg), Phi range (deg), Xbeam (mm), Ybeam (mm), Detector resol. (angstrom), Comments\n";
             foreach ($rows as $r) {
                 $r['COMMENTS'] = '"'.$r['COMMENTS'].'"';

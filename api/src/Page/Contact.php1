@@ -7,31 +7,33 @@ use SynchWeb\Page;
 class Contact extends Page
 {
 
-        public static $arg_list = array('CARDNAME' => '([\w\s-])+',
-                              'FAMILYNAME' => '([\w-])+',
-                              'GIVENNAME' => '([\w-])+',
-                              'PHONENUMBER' => '.*',
-                              'EMAILADDRESS' => '.*',
-                              'LABNAME' => '([\w\s-])+',
-                              'ADDRESS' => '([\w\s-\n,])+',
-                              'COUNTRY' => '([\w\s-,\(\)\'])+',
-                              'CITY' => '([\w\s-])+',
-                              'POSTCODE' => '([\w\s-])+',
-                              'DEFAULTCOURRIERCOMPANY' => '([\w\s-])+',
-                              'COURIERACCOUNT' => '([\w-])+',
-                              'BILLINGREFERENCE' => '([\w\s-])+',
-                              'DEWARAVGTRANSPORTVALUE' => '\d+',
-                              'DEWARAVGCUSTOMSVALUE' => '\d+',
+        public static $arg_list = array(
+            // 'CARDNAME' => '([\w\s-])+',
+            // 'FAMILYNAME' => '([\w-])+',
+            // 'GIVENNAME' => '([\w-])+',
+            'PHONENUMBER' => '.*',
+            'EMAILADDRESS' => '.*',
+            // 'LABNAME' => '([\w\s-])+',
+            // 'ADDRESS' => '([\w\s-\n,])+',
+            // 'COUNTRY' => '([\w\s-,\(\)\'])+',
+            // 'CITY' => '([\w\s-])+',
+            // 'POSTCODE' => '([\w\s-])+',
+            // 'DEFAULTCOURRIERCOMPANY' => '([\w\s-])+',
+            // 'COURIERACCOUNT' => '([\w-])+',
+            // 'BILLINGREFERENCE' => '([\w\s-])+',
+            'DEWARAVGTRANSPORTVALUE' => '\d+',
+            'DEWARAVGCUSTOMSVALUE' => '\d+',
 
-                              'PERSONID' => '\d+',
+            'PERSONID' => '\d+',
 
-                              'cid' => '\d+',
-                              );
+            // 'cid' => '\d+',
+        );
 
-        public static $dispatch = array(array('(/:cid)', 'get', '_get_contacts'),
-                              array('', 'post', '_add_contact'),
-                              array('/:cid', 'patch', '_update_contact'),
-                              );
+        public static $dispatch = array(
+            array('[/{cid:\d+}]', 'get', '_get_contacts'),
+            array('', 'post', '_add_contact'),
+            array('/{cid:\d+}', 'patch', '_update_contact'),
+        );
         
         
         # ------------------------------------------------------------------------

@@ -2,13 +2,13 @@
 
 namespace SynchWeb;
 
-use Slim\Slim;
+use Slim\App;
 
 class User
 {
     private $app, $db;
 
-	function __construct($login, $db, Slim $app) {
+	function __construct($login, $db, App $app) {
 		$this->db = $db;
 		$this->login = $login;
 		$this->app = $app;
@@ -51,8 +51,11 @@ class User
 
 
 	function can($permission) {
-		if(in_array($permission, $this->perms)) return true;
-		else $this->app->halt(403, json_encode(array('status' => 403, 'message' => 'Access Denied', 'title' => 'You do not have the permission: '.$permission)));
+		if (in_array($permission, $this->perms)) {
+            return true;
+        }
+        // $r = $response->withStatus(403)->withBody(json_encode(array('status' => 403, 'message' => 'Access Denied', 'title' => 'You do not have the permission: '.$permission)));
+        $this->app->halt(403, json_encode(array('status' => 403, 'message' => 'Access Denied', 'title' => 'You do not have the permission: '.$permission)));
 	}
 
 	function has_group($group) {

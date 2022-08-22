@@ -15,26 +15,26 @@ class Users extends Page
                                     'uid' => '\d+',
                                     'sid' => '\d+',
                                     'visit' => '\w+\d+-\d+',
-                                    'location' => '(\w|-|\/)+',
+                                    'location' => '[\w|\-|\/]+',
                                     'all' => '\d',
                                     'login' => '\d',
 
                                     'NAME' => '\w+',
 
                                     'TYPE' => '\w+',
-                                    'DESCRIPTION' => '(\w|\s)+',
+                                    'DESCRIPTION' => '[\w|\s]+',
 
 
                                     'PERSONID' => '\d+',
-                                    'FAMILYNAME' => '([\w-])+',
-                                    'GIVENNAME' => '([\w-])+',
+                                    'FAMILYNAME' => '[\w-]+',
+                                    'GIVENNAME' => '[\w-]+',
                                     'PHONENUMBER' => '.*',
                                     'EMAILADDRESS' => '.*',
-                                    'LABNAME' => '([\w\s-])+',
-                                    'ADDRESS' => '([\w\s-\n])+',
-                                    'COUNTRY' => '([\w\s-])+',
-                                    'CITY' => '([\w\s-])+',
-                                    'POSTCODE' => '([\w\s-])+',
+                                    'LABNAME' => '[\w\s\-]+',
+                                    'ADDRESS' => '[\w\s\-\n]+',
+                                    'COUNTRY' => '[\w\s\-]+',
+                                    'CITY' => '[\w\s\-]+',
+                                    'POSTCODE' => '[\w\s\-]+',
                                     'LOGIN' => '\w+',
                                     'PASSWORD' => '.*',
                               );
@@ -44,7 +44,7 @@ class Users extends Page
                                     array('/:PERSONID', 'patch', '_update_user'),
                                     array('/', 'post', '_add_user'),
 
-                                    array('/current', 'get', '_get_current_user'),
+                                    array('/users/current', 'get', '_get_current_user'),
 
                                     array('/login', 'get', '_login'),
                                     array('/log(/)', 'post', '_log_action'),

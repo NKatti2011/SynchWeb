@@ -12,14 +12,13 @@ class Proposal extends Page
         public static $arg_list = array(
                               'prop' => '\w+\d+',
                               'value' => '.*',
-                              'visit' => '\w+\d+-\d+',
+                            //   'visit' => '\w+\d+-\d+',
                               'all' => '\d',
                               'year' => '\d\d\d\d',
                               'month' => '\d+',
                               'bl' => '[\w-]+',
                               'ty' => '\w+',
                               'cm' => '\d',
-                              'ty' => '\w+',
                               'next' => '\d',
                               'prev' => '\d',
                               'started' => '\d',
@@ -73,8 +72,8 @@ class Proposal extends Page
                                         array('/', 'post', '_add_proposal'),
                                         array('/:prop', 'patch', '_update_proposal'),
 
-                                        array('/visits(/:visit)', 'get', '_get_visits'),
-                                        array('/visits/:visit', 'patch', '_update_visit'),
+                                        array('/visits[/{visit:\w+\d+-\d+}]', 'get', '_get_visits'),
+                                        array('/visits/{visit:\w+\d+-\d+}', 'patch', '_update_visit'),
                                         array('/visits', 'post', '_add_visit'),
 
                                         array('/visits/users', 'get', '_get_visit_users'),

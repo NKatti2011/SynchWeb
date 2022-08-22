@@ -6,7 +6,9 @@ use Exception;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 use ReflectionClass;
-use Slim\Slim;
+use Slim\App;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 use xmlrpc_client;
 use xmlrpcmsg;
 use xmlrpcval;
@@ -49,7 +51,7 @@ class Page
         }
 
         
-        function __construct(Slim $app, $db, $user) {
+        function __construct(App $app, $db, $user) {
             $this->_arg_list = array();
             $this->_dispatch = array();
             $class = $this;
@@ -322,10 +324,57 @@ class Page
         
         function _setup_routes() {
             foreach ($this->_dispatch as $args) {
-                if (sizeof($args) > 4) $this->app->{$args[1]}($args[0], array(&$this, 'execute'), array(&$this, $args[2]))->conditions($args[3])->name($args[4]);
-                if (sizeof($args) > 3) $this->app->{$args[1]}($args[0], array(&$this, 'execute'), array(&$this, $args[2]))->conditions($args[3]);
-                else $this->app->{$args[1]}($args[0], array(&$this, 'execute'), array(&$this, $args[2]))->conditions($this->_arg_list);
+                if (is_callable(array($this, $args[2]))){
+                    // var_dump($args);
+                    if (sizeof($args) > 3) {
+                        // print_r($args);
+                        // var_dump($args);
+                        $this->_setup_named_route($args);
+                    // } elseif (sizeof($args) == 3) {
+                    //     $this->_setup_route($args);
+                    } else {
+                        // print_r($args[0].'<br/>');
+                        // var_dump($this);
+                        $this->_setup_route_with_arg_list($args);
+                        // $this->app->{$args[1]}($args[0], array(&$this, 'execute'), array(&$this, $args[2]))->conditions($this->_arg_list);
+                    }
+                } else {
+                    print_r('GAAAAAAAAAA');
+                    var_dump($args);
+                    // $this->default(); //or some kind of error message
+                }
+    
+                // if (sizeof($args) > 4) $this->app->{$args[1]}($args[0], array(&$this, 'execute'), array(&$this, $args[2]))->conditions($args[3])->name($args[4]);
+                // if (sizeof($args) > 3) $this->app->{$args[1]}($args[0], array(&$this, 'execute'), array(&$this, $args[2]))->conditions($args[3]);
+                // else                   
             }
+        }
+
+        function _setup_named_route(array $args) {
+            $this->app->{$args[1]}($args[0], function (Request $request, Response $response) use ($args) {
+                return $this->{$args[2]}();
+            })->setName($args[3]);
+        }
+        function _setup_route(array $args) {
+            $this->app->{$args[1]}($args[0], function (Request $request, Response $response) use ($args) {
+                return $this->{$args[2]}();
+            });
+        }
+        function _setup_route_with_arg_list(array $args) {
+             // a ']' at the end indicates optional parameters - meaning we can't then append more optional parameters
+            if (!str_ends_with($args[0], ']')) {
+                // if (!str_ends_with($args[0], '/')) {
+                //     $args[0] = $args[0].'/';
+                // }
+                // foreach ($this->_arg_list as $key => $val) {
+                //     $args[0] = $args[0].'{'.$key.':'.$val.'}';
+                // }
+            }
+
+            // var_dump($args);
+            $this->app->{$args[1]}($args[0], function (Request $request, Response $response) use ($args) {
+                return $this->{$args[2]}();
+            });
         }
         
         function execute($route) {
@@ -511,6 +560,13 @@ class Page
                                     $parsed[$label] = $object;
                                 }
                             } else {
+
+                                // var_dump($request);
+                                // var_dump($request[$k]);
+                                // var_dump($k);
+                                // var_dump($v);
+//                                $blah = preg_match('/^'.$v.'$/m', $request[$k]);
+  //                              var_dump($blah);
                                 if (preg_match('/^'.$v.'$/m', $request[$k])) {
                                     $parsed[$k] = $v == '.*' ? $purifier->purify($request[$k]) : $request[$k];
                                 }

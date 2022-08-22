@@ -8,7 +8,7 @@ define("_MPDF_TEMP_PATH", sys_get_temp_dir() . "/mpdf/temp/");
 define("_MPDF_TTFONTDATAPATH", sys_get_temp_dir() . "/mpdf/ttfontdata/");
 
 use mPDF;
-use Slim\Slim;
+use Slim\App;
 use SynchWeb\Page;
 
 # ------------------------------------------------------------------------
@@ -27,7 +27,6 @@ class PDF extends Page
                               'p' => '\d',
                               'cid' => '\d+',
                               'did' => '\d+',
-                              'sid' => '\d+',
                               'labels' => '[\w-]+',
                               'month' => '\d\d-\d\d\d\d',
                               );
@@ -40,7 +39,7 @@ class PDF extends Page
                               array('/manifest', 'get', '_get_manifest'),
         );
 
-        function __construct(Slim $app, $db, $user) {
+        function __construct(App $app, $db, $user) {
             // Call parent constructor to register our routes
             parent::__construct($app, $db, $user);
 

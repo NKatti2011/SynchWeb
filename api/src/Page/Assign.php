@@ -7,15 +7,21 @@ use SynchWeb\Page;
 class Assign extends Page
 {
         
-        public static $arg_list = array('visit' => '\w+\d+-\d+', 'cid' => '\d+', 'did' => '\d+', 'pos' => '\d+', 'bl' => '[\w-]+');
+        public static $arg_list = array(
+            // 'visit' => '\w+\d+-\d+', 
+            'cid' => '\d+', 
+            'did' => '\d+', 
+            'pos' => '\d+', 
+            'bl' => '[\w-]+'
+        );
 
-        public static $dispatch = array(array('/visits(/:visit)', 'get', '_blsr_visits'),
-                              array('/assign', 'get', '_assign'),
-                              array('/unassign', 'get', '_unassign'),
-                              array('/deact', 'get', '_deactivate'),
-                              array('/names', 'get', '_get_puck_names'),
-
-                             );
+        public static $dispatch = array(
+            array('/visits[/{visit:\w+\d+-\d+}]', 'get', '_blsr_visits'),
+            array('/assign', 'get', '_assign'),
+            array('/unassign', 'get', '_unassign'),
+            array('/deact', 'get', '_deactivate'),
+            array('/names', 'get', '_get_puck_names'),
+        );
         
         var $def = 'unassign';
         

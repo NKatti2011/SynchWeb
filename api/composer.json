@@ -21,11 +21,12 @@
     "jdorn/sql-formatter": "1.2.9",
     "mpdf/mpdf": "8.1.2",
     "phpxmlrpc/phpxmlrpc": "3.1.2",
-    "ralouphie/getallheaders": "2.0.5",
-    "slim/slim": "2.6.2",
+    "ralouphie/getallheaders": "^3.0",
+    "slim/slim": "4.*",
     "stomp-php/stomp-php": "3.0.6",
     "symfony/http-foundation": "^2.8",
-    "symfony/filesystem": "^2.8"
+    "symfony/filesystem": "^2.8",
+    "slim/psr7": "^1.5"
   },
   "autoload": {
     "psr-4": {
