@@ -172,7 +172,12 @@ export default {
       return [ this.inputClass,  this.errorMessage ? this.errorClass : '']
     },
     inlineText() {
-      return this.initialText || this.localValue
+      const selectedItem = this.options.find(item => item[this.optionValueKey] === this.localValue)
+      return this.initialText
+        ? this.initialText
+        : selectedItem
+          ? selectedItem[this.optionTextKey]
+          : ''
     }
   },
   created() {

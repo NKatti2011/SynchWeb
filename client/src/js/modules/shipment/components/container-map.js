@@ -22,7 +22,8 @@ export const ContainerViewMap = {
 // We assign null to the view property because we want to use new components
 export const ContainerPlateViewMap = {
   mx:     { title: 'Container', view: ContainerPlateView },
-  default:{ title: 'Container', view: ContainerPlateView }
+  default:{ title: 'Container', view: ContainerPlateView },
+  new_mx: { title: 'Container', view: null }
 }
 
 // We assign null to the view property because we want to use new components

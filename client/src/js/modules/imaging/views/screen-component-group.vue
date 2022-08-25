@@ -7,7 +7,6 @@
     <custom-table-component
       class="tw-w-full screen-component-group-table"
       :data-list="formattedScreenComponents"
-      :headers="headers"
       no-data-text="No components for this group">
       <template v-slot:tableHeaders>
         <td class="tw-w-5/12 tw-py-2 tw-text-center">Component</td>

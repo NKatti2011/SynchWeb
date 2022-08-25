@@ -91,26 +91,28 @@ const proposalModule = {
           })
         })
       },
-      //
-      // Set the proposal based on looking up a collection/contact id
-      // The ProposalLookup backbone model actually calls app.cookie which in turn sets the proposal mutation
-      //
-      proposalLookup(state, params) {
-        return new Promise((resolve, reject) => {
-          let lookup = new ProposalLookup({ field: params.field, value: params.value })
+    //
+    // Set the proposal based on looking up a collection/contact id
+    // The ProposalLookup backbone model actually calls app.cookie which in turn sets the proposal mutation
+    //
+    proposalLookup({ commit, dispatch }, params) {
+      return new Promise((resolve, reject) => {
+        let lookup = new ProposalLookup({ field: params.field, value: params.value })
 
-          lookup.find({
-              success: function() {
-                // If ok then ProposalLookup has set a new proposal for us
-                // We might need to do other things here - refresh proposal type?
-                resolve(lookup)
-              },
-              error: function() {
-                reject({msg: 'Error looking up proposal from ' + params.field})
-              }
-          })
+        lookup.find({
+            success: function() {
+              // If ok then ProposalLookup has set a new proposal for us
+              // We might need to do other things here - refresh proposal type?
+              dispatch('setProposal', lookup.get('PROP'))
+
+              resolve(lookup)
+            },
+            error: function() {
+              reject({msg: 'Error looking up proposal from ' + params.field})
+            }
         })
-      },
+      })
+    },
   },
   getters: {
     currentProposal: function(state) {
@@ -131,6 +133,7 @@ const proposalModule = {
     currentProposalState: state => state.proposalModel ? state.proposalModel.get('STATE'): null,
     getProposalId: state => state.proposalModel ? state.proposalModel.get('PROPOSALID'): null,
     currentVisit: state => state.visit,
+    getProposalModelField: state => field => state.proposalModel ? state.proposalModel.get(field) : null
   }
 }
 

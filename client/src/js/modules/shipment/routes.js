@@ -167,7 +167,7 @@ const routes = [
       {
         path: 'add',
         component: MarionetteView,
-        props: route => ({
+        props: () => ({
           mview: ShipmentAddView,
           breadcrumbs: [bc, { title: 'Add New Shipment' }],
           options: {
@@ -176,7 +176,7 @@ const routes = [
         }),
         beforeEnter: (to, from, next) => {
           // Is this proposal still open?
-          if (app.proposal && app.proposal.get('ACTIVE') != 1) {
+          if (app.proposal && +app.proposal.get('ACTIVE') !== 1) {
             app.message({ title: 'Proposal Not Active', message: 'This proposal is not active so new shipments cannot be added'} )
             next('/403?url='+to.fullPath)
           } else {
@@ -231,7 +231,7 @@ const routes = [
       {
         path: 'awb/sid/:sid',
         component: MarionetteView,
-        props: route => ({
+        props: () => ({
           mview: CreateAWBView,
           breadcrumbs: [bc, { title: 'Create Airway Bill' }], // Actually swapped round with shippingname
           breadcrumb_tags: ['SHIPPINGNAME'], // If we find a model append to the bc
@@ -260,7 +260,7 @@ const routes = [
       {
         path: 'pickup/sid/:sid',
         component: MarionetteView,
-        props: route => ({
+        props: () => ({
           mview: RebookPickupView,
           breadcrumbs: [bc, { title: 'Rebook Pickup' }], // Actually swapped round with shippingname
           breadcrumb_tags: ['SHIPPINGNAME'], // If we find a model append to the bc
@@ -320,7 +320,7 @@ const routes = [
     name: 'container-list',
     component: MarionetteView,
     props: route => ({
-      mview: app.type == 'xpdf' ? XpdfContainersView : ContainersView,
+      mview: app.type === 'xpdf' ? XpdfContainersView : ContainersView,
       breadcrumbs: [bc, { title: 'Containers' }],
       options: {
         collection: new Containers(null, {
@@ -333,6 +333,16 @@ const routes = [
   },
   {
     path: '/containers/cid/:cid([0-9]+)(/iid/)?:iid([0-9]+)?(/sid/)?:sid([0-9]+)?',
+    name: 'container-view',
+    component: ContainerViewWrapper,
+    props: route => ({
+      cid: +route.params.cid,
+      iid: +route.params.iid,
+      sid: +route.params.sid,
+    }),
+  },
+  {
+    path: '/new/containers/cid/:cid([0-9]+)(/iid/)?:iid([0-9]+)?(/sid/)?:sid([0-9]+)?',
     name: 'container-view',
     component: ContainerViewWrapper,
     props: route => ({
@@ -432,7 +442,7 @@ const routes = [
   {
     path: '/dewars/dispatch/:did([0-9]+)',
     component: MarionetteView,
-    props: route => ({
+    props: () => ({
       mview: DispatchView,
       breadcrumbs: [bc, { title: 'Dispatch Dewar' }],
       breadcrumb_tags: ['CODE'],
@@ -455,11 +465,11 @@ const routes = [
             store.commit('notifications/addNotification', {title: 'Error', message: 'Shipment not found from dewar id', level: 'error'}) 
             next('/404')
           })
-        }, (err) => {
+        }, () => {
           store.commit('notifications/addNotification', {title: 'Error', message: 'Dewar not found', level: 'error'})
           next('/404')
         })
-      }, (err) => {
+      }, () => {
         store.commit('notifications/addNotification', {title: 'Error', message: 'Proposal not found', level: 'error'})
         next('/404')
       }).finally( () => {
@@ -471,7 +481,7 @@ const routes = [
   {
     path: '/dewars/transfer/:did([0-9]+)',
     component: MarionetteView,
-    props: route => ({
+    props: () => ({
       mview: TransferView,
       breadcrumbs: [bc, { title: 'Transfer Dewar' }],
       breadcrumb_tags: ['CODE'],
@@ -486,13 +496,13 @@ const routes = [
       const lookupProposal = store.dispatch('proposal/proposalLookup', { field: 'DEWARID', value: +to.params.did } )
 
       lookupProposal.then( () => {
-        lookupDewar(to.params.did).then( (model) => {
+        lookupDewar(to.params.did).then( () => {
           next()
-        }, (err) => {
+        }, () => {
           store.commit('notifications/addNotification', {title: 'Error', message: 'Dewar not found', level: 'error'})
           next('/404')
         })
-      }, (err) => {
+      }, () => {
         store.commit('notifications/addNotification', {title: 'Error', message: 'Proposal not found', level: 'error'})
         next('/404')
       }).finally( () => {

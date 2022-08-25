@@ -24,6 +24,7 @@ import MarionetteView from 'app/views/marionette/marionette-wrapper.vue'
 import { ContainerViewMap, ContainerPlateViewMap } from 'modules/shipment/components/container-map'
 import Container from 'models/container'
 import MxContainerView from 'modules/types/mx/shipment/views/mx-container-view.vue'
+import ContainerPlate from 'js/modules/shipment/views/container-plate.vue'
 
 import store from 'app/store/store'
 
@@ -31,7 +32,8 @@ export default {
   name: 'container-view-wrapper',
   components: {
     'marionette-view': MarionetteView,
-    'mx-container-view': MxContainerView
+    'mx-container-view': MxContainerView,
+    'container-plate-view': ContainerPlate
   },
   props: {
     'cid': Number,
@@ -60,13 +62,13 @@ export default {
       }
     },
     proposalType : function() {
+      if (this.$route.fullPath.includes('new')) return 'new_mx'
       return this.$store.state.proposal.proposalType
     }
   },
   created: function() {
     // Determine the marionette view constructor we need based on the type
     // The title is based on the proposal type
-    let title = ContainerViewMap[this.proposalType] ? ContainerViewMap[this.proposalType].title : 'Container'
 
     this.bc = [{ title: 'Shipments', url: '/shipments' }]
 
@@ -91,6 +93,7 @@ export default {
         if (!this.mview) {
           const newViewContainers = {
             mx: 'mx-container-view',
+            new_mx: 'container-plate-view'
           }
 
           this.componentType = newViewContainers[this.proposalType]
@@ -113,9 +116,7 @@ export default {
       // This is the current logic to determine the plate type
       // Anything other than Box, Puck or PCRStrip
       // TODO - get container types from data base
-      let is_plate = ['box', 'puck', 'pcrstrip', null].indexOf(containerType) == -1 && containerType.indexOf('puck') == -1
-
-      return is_plate
+      return ['box', 'puck', 'pcrstrip', null].indexOf(containerType) === -1 && containerType.indexOf('puck') === -1
     },
     async updateContainerModel(data) {
       this.model.set(data)
