@@ -161,7 +161,8 @@ class Sample extends Page
                               array('/components', 'post', '_add_sample_component'),
                               array('/components/:scid', 'delete', '_remove_sample_component'),
 
-                              array('/sub(/:ssid)(/sid/:sid)', 'get', '_sub_samples'),
+                              array('/sub(/sid/:sid)', 'get', '_sub_samples'),
+                              array('/sub/:ssid', 'get', '_get_sub_sample'),
                               array('/sub/:ssid', 'patch', '_update_sub_sample'),
                               array('/sub/:ssid', 'put', '_update_sub_sample_full'),
                               array('/sub', 'post', '_add_sub_sample'),
@@ -546,23 +547,61 @@ class Sample extends Page
 
         function _sub_samples() {
             $where = '';
-            $having = '';
+            $first_inner_select_where = '';
+            $second_inner_select_where = '';
             $args = array($this->proposalid);
 
             if ($this->has_arg('sid')) {
                 $where .= ' AND s.blsampleid=:'.(sizeof($args)+1);
-                array_push($args, $this->arg('sid'));
-            }
-
-            if ($this->has_arg('ssid')) {
-                $where .= ' AND ss.blsubsampleid=:'.(sizeof($args)+1);
-                array_push($args, $this->arg('ssid'));
+                $first_inner_select_where .= ' AND s.blsampleid=:'.(sizeof($args) + 2);
+                $second_inner_select_where .= ' AND s.blsampleid=:'.(sizeof($args) + 3);
+                array_push($args, $this->arg('sid'), $this->arg('sid'), $this->arg('sid'));
             }
 
             if ($this->has_arg('cid')) {
                 $where .= ' AND c.containerid=:'.(sizeof($args)+1);
-                array_push($args, $this->arg('cid'));
+                $first_inner_select_where .= ' AND s.containerid=:'.(sizeof($args) + 2);
+                $second_inner_select_where .= ' AND s.containerid=:'.(sizeof($args) + 3);
+                array_push($args, $this->arg('cid'), $this->arg('cid'), $this->arg('cid'));
             }
+
+            $this->db->wait_rep_sync(true);
+            $ss_query_string = $this->get_sub_samples_query($where, $first_inner_select_where, $second_inner_select_where);
+            $subs = $this->db->pq($ss_query_string, $args);
+
+            $this->db->wait_rep_sync(false);
+
+            foreach ($subs as $i => &$r) $r['RID'] = $i;
+
+            $this->_output($subs);
+        }
+
+        function _get_sub_sample() {
+            $where = '';
+            $args = array($this->proposalid);
+
+            if ($this->has_arg('ssid')) {
+                $where .= ' AND ss.blsubsampleid=:'.(sizeof($args)+1);
+                array_push($args,  $this->arg('ssid'));
+            }
+
+            $this->db->wait_rep_sync(true);
+            $ss_query_string = $this->get_sub_samples_query($where);
+            $subs = $this->db->pq($ss_query_string, $args);
+
+            $this->db->wait_rep_sync(false);
+
+            if (!sizeof($subs)) $this->_error('No such sub sample');
+            else {
+                $subs[0]['RID'] = 0;
+                $this->_output($subs[0]);
+            }
+        }
+
+        private function get_sub_samples_query($where, $first_inner_select_where = '', $second_inner_select_where = '') {
+            $group_by = "";
+            $order_by = "";
+            $having = "";
 
             if ($this->has_arg('queued')) {
                 $where .= ' AND cqs.containerqueuesampleid IS NOT NULL';
@@ -576,57 +615,139 @@ class Sample extends Page
                 $having .= ' HAVING count(dc.datacollectionid) = 0';
             }
 
-            $this->db->wait_rep_sync(true);
-            $subs = $this->db->pq("SELECT pr.acronym as protein, s.name as sample, dp.experimentkind, dp.preferredbeamsizex, dp.preferredbeamsizey, round(dp.exposuretime,6) as exposuretime, dp.requiredresolution, dp.boxsizex, dp.boxsizey, dp.monochromator, dp.axisstart, dp.axisrange, dp.numberofimages, dp.transmission, dp.energy, count(sss.blsampleid) as samples, s.location, ss.diffractionplanid, pr.proteinid, ss.blsubsampleid, ss.blsampleid, ss.comments, ss.positionid, po.posx as x, po.posy as y, po.posz as z, po2.posx as x2, po2.posy as y2, po2.posz as z2, IF(cqs.containerqueuesampleid IS NOT NULL AND cqs.containerqueueid IS NULL, 1, 0) as readyforqueue, cq.containerqueueid, count(distinct IF(dc.overlap != 0,dc.datacollectionid,NULL)) as sc, count(distinct IF(dc.overlap = 0 AND dc.axisrange = 0,dc.datacollectionid,NULL)) as gr, count(distinct IF(dc.overlap = 0 AND dc.axisrange > 0,dc.datacollectionid,NULL)) as dc, count(distinct so.screeningid) as ai, count(distinct app.autoprocprogramid) as ap, count(distinct IF(dcg.experimenttype LIKE 'XRF map', dc.datacollectionid, NULL)) as xm, count(distinct IF(dcg.experimenttype LIKE 'XRF spectrum', dc.datacollectionid, NULL)) as xs, count(distinct IF(dcg.experimenttype LIKE 'Energy scan', dc.datacollectionid, NULL)) as es, round(min(st.rankingresolution),2) as scresolution, max(ssw.completeness) as sccompleteness, round(min(apss.resolutionlimithigh),2) as dcresolution, round(max(apss.completeness),1) as dccompleteness, cq2.completedtimestamp as queuecompleted
-              FROM blsubsample ss
-              LEFT OUTER JOIN position po ON po.positionid = ss.positionid
-              LEFT OUTER JOIN position po2 ON po2.positionid = ss.position2id
-              LEFT OUTER JOIN blsample sss on ss.blsubsampleid = sss.blsubsampleid
-              INNER JOIN blsample s ON s.blsampleid = ss.blsampleid
-              INNER JOIN crystal cr ON cr.crystalid = s.crystalid
-              INNER JOIN protein pr ON pr.proteinid = cr.proteinid
-              INNER JOIN container c ON c.containerid = s.containerid
-              INNER JOIN dewar d ON d.dewarid = c.dewarid
-              INNER JOIN shipping sh ON sh.shippingid = d.shippingid
-              INNER JOIN proposal p ON p.proposalid = sh.proposalid
-              
-              
-              LEFT OUTER JOIN containerqueuesample cqs ON cqs.blsubsampleid = ss.blsubsampleid
-              LEFT OUTER JOIN containerqueue cq ON cqs.containerqueueid = cq.containerqueueid AND cq.completedtimestamp IS NULL
-
-              LEFT OUTER JOIN containerqueuesample cqs2 ON cqs2.blsubsampleid = ss.blsubsampleid
-              LEFT OUTER JOIN containerqueue cq2 ON cq2.containerqueueid = cqs2.containerqueueid AND cq2.completedtimestamp IS NOT NULL
-              
-
-              LEFT OUTER JOIN diffractionplan dp ON ss.diffractionplanid = dp.diffractionplanid
-
-              LEFT OUTER JOIN datacollection dc ON ss.blsubsampleid = dc.blsubsampleid
-              LEFT OUTER JOIN datacollectiongroup dcg on dc.datacollectiongroupid = dcg.datacollectiongroupid
-              LEFT OUTER JOIN screening sc ON dc.datacollectionid = sc.datacollectionid
-              LEFT OUTER JOIN screeningoutput so ON sc.screeningid = so.screeningid
-              
-              LEFT OUTER JOIN screeningstrategy st ON st.screeningoutputid = so.screeningoutputid AND sc.shortcomments LIKE '%EDNA%'
-              LEFT OUTER JOIN screeningstrategywedge ssw ON ssw.screeningstrategyid = st.screeningstrategyid
-              
-              LEFT OUTER JOIN autoprocintegration ap ON ap.datacollectionid = dc.datacollectionid
-              LEFT OUTER JOIN autoprocscaling_has_int aph ON aph.autoprocintegrationid = ap.autoprocintegrationid
-              LEFT OUTER JOIN autoprocscalingstatistics apss ON apss.autoprocscalingid = aph.autoprocscalingid
-              LEFT OUTER JOIN autoprocprogram app ON app.autoprocprogramid = ap.autoprocprogramid AND app.processingstatus = 1
-
-              WHERE p.proposalid=:1 AND ss.source='manual' $where
-              GROUP BY pr.acronym, s.name, dp.experimentkind, dp.preferredbeamsizex, dp.preferredbeamsizey, dp.exposuretime, dp.requiredresolution, s.location, ss.diffractionplanid, pr.proteinid, ss.blsubsampleid, ss.blsampleid, ss.comments, ss.positionid, po.posx, po.posy, po.posz
-              $having
-              ORDER BY ss.blsubsampleid", $args);
-
-            $this->db->wait_rep_sync(false);
-
-            foreach ($subs as $i => &$r) $r['RID'] = $i;
-
             if ($this->has_arg('ssid')) {
-                if (!sizeof($subs)) $this->_error('No such sub sample');
-                else $this->_output($subs[0]);
+                $from_query = "FROM blsubsample ss";
 
-            } else $this->_output($subs);
+            } else {
+                $from_query = "FROM (
+                    SELECT ss.blsubsampleid
+                    FROM (
+                        SELECT s.blsampleid, max(si.blsampleimageid) AS blsampleimageid
+                      FROM blsample s
+                          INNER JOIN blsampleimage si ON si.blsampleid = s.blsampleid
+                      WHERE 1=1 $first_inner_select_where
+                      GROUP BY s.blsampleid
+                    ) qq
+                    JOIN blsubsample ss ON ss.blsampleimageid = qq.blsampleimageid
+                    WHERE ss.source = 'auto'
+            
+                    UNION ALL
+            
+                    SELECT ss.blsubsampleid
+                    FROM blsubsample ss
+                        LEFT JOIN blsample s on ss.blsampleid = s.blsampleid
+                    WHERE ss.source = 'manual' $second_inner_select_where
+                ) q JOIN blsubsample ss ON ss.blsubsampleid = q.blsubsampleid";
+
+                $group_by = "GROUP BY pr.acronym,
+                    s.name,
+                    dp.experimentkind,
+                    dp.preferredbeamsizex,
+                    dp.preferredbeamsizey,
+                    dp.exposuretime,
+                    dp.requiredresolution,
+                    s.location,
+                    ss.diffractionplanid,
+                    pr.proteinid,
+                    ss.blsubsampleid,
+                    ss.blsampleid,
+                    ss.source,
+                    ss.comments,
+                    ss.positionid,
+                    po.posx,
+                    po.posy,
+                    po.posz";
+
+                $order_by = "ORDER BY ss.blsubsampleid";
+            }
+
+            return "SELECT
+                pr.acronym as protein,
+                s.name as sample,
+                dp.experimentkind,
+                dp.preferredbeamsizex,
+                dp.preferredbeamsizey,
+                round(dp.exposuretime,6) as exposuretime,
+                dp.requiredresolution,
+                dp.boxsizex,
+                dp.boxsizey,
+                dp.monochromator,
+                dp.axisstart,
+                dp.axisrange,
+                dp.numberofimages,
+                dp.transmission,
+                dp.energy,
+                count(sss.blsampleid) as samples,
+                s.location,
+                ss.diffractionplanid,
+                pr.proteinid,
+                ss.blsubsampleid,
+                ss.blsampleid,
+                ss.source,
+                ss.blsampleimageid,
+                ss.comments,
+                ss.positionid,
+                po.posx as x,
+                po.posy as y,
+                po.posz as z,
+                po2.posx as x2,
+                po2.posy as y2,
+                po2.posz as z2,
+                IF(cqs.containerqueuesampleid IS NOT NULL AND cqs.containerqueueid IS NULL, 1, 0) as readyforqueue,
+                cq.containerqueueid,
+                count(distinct IF(dc.overlap != 0,
+                dc.datacollectionid,NULL)) as sc,
+                count(distinct IF(dc.overlap = 0 AND dc.axisrange = 0,dc.datacollectionid,NULL)) as gr,
+                count(distinct IF(dc.overlap = 0 AND dc.axisrange > 0,dc.datacollectionid,NULL)) as dc,
+                count(distinct so.screeningid) as ai,
+                count(distinct app.autoprocprogramid) as ap,
+                count(distinct IF(dcg.experimenttype LIKE 'XRF map', dc.datacollectionid, NULL)) as xm,
+                count(distinct IF(dcg.experimenttype LIKE 'XRF spectrum', dc.datacollectionid, NULL)) as xs,
+                count(distinct IF(dcg.experimenttype LIKE 'Energy scan', dc.datacollectionid, NULL)) as es,
+                round(min(st.rankingresolution),2) as scresolution,
+                max(ssw.completeness) as sccompleteness,
+                round(min(apss.resolutionlimithigh),2) as dcresolution,
+                round(max(apss.completeness),1) as dccompleteness,
+                cq2.completedtimestamp as queuecompleted
+                $from_query
+                LEFT OUTER JOIN position po ON po.positionid = ss.positionid
+                LEFT OUTER JOIN position po2 ON po2.positionid = ss.position2id
+                LEFT OUTER JOIN blsample sss on ss.blsubsampleid = sss.blsubsampleid
+                INNER JOIN blsample s ON s.blsampleid = ss.blsampleid
+                INNER JOIN crystal cr ON cr.crystalid = s.crystalid
+                INNER JOIN protein pr ON pr.proteinid = cr.proteinid
+                INNER JOIN container c ON c.containerid = s.containerid
+                INNER JOIN dewar d ON d.dewarid = c.dewarid
+                INNER JOIN shipping sh ON sh.shippingid = d.shippingid
+                INNER JOIN proposal p ON p.proposalid = sh.proposalid
+
+
+                LEFT OUTER JOIN containerqueuesample cqs ON cqs.blsubsampleid = ss.blsubsampleid
+                LEFT OUTER JOIN containerqueue cq ON cqs.containerqueueid = cq.containerqueueid AND cq.completedtimestamp IS NULL
+                
+                LEFT OUTER JOIN containerqueuesample cqs2 ON cqs2.blsubsampleid = ss.blsubsampleid
+                LEFT OUTER JOIN containerqueue cq2 ON cq2.containerqueueid = cqs2.containerqueueid AND cq2.completedtimestamp IS NOT NULL
+                
+                
+                LEFT OUTER JOIN diffractionplan dp ON ss.diffractionplanid = dp.diffractionplanid
+                
+                LEFT OUTER JOIN datacollection dc ON ss.blsubsampleid = dc.blsubsampleid
+                LEFT OUTER JOIN datacollectiongroup dcg on dc.datacollectiongroupid = dcg.datacollectiongroupid
+                LEFT OUTER JOIN screening sc ON dc.datacollectionid = sc.datacollectionid
+                LEFT OUTER JOIN screeningoutput so ON sc.screeningid = so.screeningid
+                
+                LEFT OUTER JOIN screeningstrategy st ON st.screeningoutputid = so.screeningoutputid AND sc.shortcomments LIKE '%EDNA%'
+                LEFT OUTER JOIN screeningstrategywedge ssw ON ssw.screeningstrategyid = st.screeningstrategyid
+                
+                LEFT OUTER JOIN autoprocintegration ap ON ap.datacollectionid = dc.datacollectionid
+                LEFT OUTER JOIN autoprocscaling_has_int aph ON aph.autoprocintegrationid = ap.autoprocintegrationid
+                LEFT OUTER JOIN autoprocscalingstatistics apss ON apss.autoprocscalingid = aph.autoprocscalingid
+                LEFT OUTER JOIN autoprocprogram app ON app.autoprocprogramid = ap.autoprocprogramid AND app.processingstatus = 1
+
+                WHERE p.proposalid=:1 $where
+                $group_by
+                $having
+                $order_by";
         }
 
         function _update_sub_sample() {
@@ -748,7 +869,7 @@ class Sample extends Page
 
             // $this->_output(array('BLSUBSAMPLEID' => $this->db->id()));
             $this->args['ssid'] = $this->db->id();
-            $this->_sub_samples();
+            $this->_get_sub_sample();
         }
 
 
